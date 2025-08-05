@@ -1,0 +1,210 @@
+/* Custom App Styles */
+
+/* Weather Dashboard Specific Styles */
+.weather-background {
+  @apply min-h-screen bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 p-4;
+}
+
+.weather-container {
+  @apply max-w-6xl mx-auto;
+}
+
+.weather-header {
+  @apply text-center mb-8;
+}
+
+.weather-title {
+  @apply text-4xl font-bold text-white mb-2;
+}
+
+.weather-subtitle {
+  @apply text-blue-100;
+}
+
+.search-container {
+  @apply max-w-md mx-auto mb-8;
+}
+
+.search-input {
+  @apply w-full px-4 py-3 pl-12 rounded-2xl border-none shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300/50 text-gray-700;
+}
+
+.search-icon {
+  @apply absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5;
+}
+
+.search-button {
+  @apply absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl transition-colors disabled:opacity-50;
+}
+
+.error-message {
+  @apply max-w-md mx-auto mb-6 p-4 bg-red-100 border border-red-300 rounded-xl text-red-700 text-center;
+}
+
+.loading-spinner {
+  @apply inline-block w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin;
+}
+
+.weather-card {
+  @apply bg-white/20 backdrop-blur-lg rounded-3xl p-8 mb-8 shadow-2xl border border-white/20;
+}
+
+.weather-location {
+  @apply flex items-center space-x-2 text-white;
+}
+
+.weather-location-text {
+  @apply text-lg font-medium;
+}
+
+.weather-main-info {
+  @apply text-center md:text-left;
+}
+
+.weather-icon-large {
+  @apply text-6xl animate-pulse;
+}
+
+.weather-temperature {
+  @apply text-5xl font-bold text-white;
+}
+
+.weather-condition {
+  @apply text-blue-100 text-lg;
+}
+
+.weather-feels-like {
+  @apply text-blue-100;
+}
+
+.weather-detail-card {
+  @apply bg-white/10 rounded-2xl p-4 text-center;
+}
+
+.weather-detail-icon {
+  @apply w-6 h-6 text-blue-200 mx-auto mb-2;
+}
+
+.weather-detail-value {
+  @apply text-white font-semibold;
+}
+
+.weather-detail-label {
+  @apply text-blue-200 text-sm;
+}
+
+.forecast-card {
+  @apply bg-white/20 backdrop-blur-lg rounded-3xl p-8 shadow-2xl border border-white/20;
+}
+
+.forecast-title {
+  @apply text-2xl font-bold text-white mb-6 text-center;
+}
+
+.forecast-grid {
+  @apply grid grid-cols-2 md:grid-cols-5 gap-4;
+}
+
+.forecast-day-card {
+  @apply bg-white/10 rounded-2xl p-4 text-center hover:bg-white/20 transition-all duration-300 hover:scale-105;
+}
+
+.forecast-day-name {
+  @apply text-blue-100 font-medium mb-2;
+}
+
+.forecast-icon {
+  @apply text-3xl mb-2 animate-pulse;
+}
+
+.forecast-temp-high {
+  @apply text-white font-semibold mb-1;
+}
+
+.forecast-temp-low {
+  @apply text-blue-200 text-sm mb-2;
+}
+
+.forecast-condition {
+  @apply text-blue-200 text-xs;
+}
+
+.quick-search-container {
+  @apply text-center mt-8;
+}
+
+.quick-search-text {
+  @apply text-blue-100 mb-4;
+}
+
+.quick-search-buttons {
+  @apply flex flex-wrap justify-center gap-2;
+}
+
+.quick-search-button {
+  @apply px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl transition-colors backdrop-blur-sm;
+}
+
+/* Custom animations */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+/* Custom hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Custom gradient text */
+.gradient-text {
+  background: linear-gradient(45deg, #8b5cf6, #ec4899, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Custom button styles */
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Loading spinner */
+.spinner {
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #8b5cf6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
