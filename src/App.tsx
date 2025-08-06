@@ -36,7 +36,7 @@ function App() {
   // Weather icon mapping function
   const getWeatherIcon = (iconCode: string): string => {
     const iconMap: Record<string, string> = {
-      '01d': '☀️', '01n': '🌙',
+      '01d': '☀️', '01n': '�',
       '02d': '⛅', '02n': '☁️',
       '03d': '☁️', '03n': '☁️',
       '04d': '☁️', '04n': '☁️',
@@ -53,12 +53,19 @@ function App() {
   const fetchWeatherData = async (city: string): Promise<{ current: WeatherData; forecast: ForecastDay[] } | null> => {
     try {
       // Fetch current weather
-      const currentResponse = await fetch(
-        `${BASE_URL}/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`
-      );
+      const weatherUrl = `${BASE_URL}/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`;
+      const currentResponse = await fetch(weatherUrl);
       
       if (!currentResponse.ok) {
-        throw new Error('City not found');
+        const errorData = await currentResponse.json();
+        
+        if (currentResponse.status === 401) {
+          throw new Error('🔑 API Key Issue: Your OpenWeatherMap API key is not working yet. New keys can take up to 1 hour to activate. Please wait and try again, or check your OpenWeatherMap dashboard to ensure the key is active.');
+        } else if (currentResponse.status === 404) {
+          throw new Error(`🏙️ City "${city}" not found. Please check the spelling and try again. Try: London, Paris, Tokyo, New York, etc.`);
+        } else {
+          throw new Error(`🌐 API Error (${currentResponse.status}): ${errorData.message || 'Unable to fetch weather data'}`);
+        }
       }
       
       const currentData = await currentResponse.json();
@@ -135,7 +142,7 @@ function App() {
         setForecast([]);
       }
     } catch (error) {
-      setError(`Failed to fetch weather data for "${searchLocation}". Please try again.`);
+      setError(`Failed to fetch weather data for "${searchLocation}". ${error instanceof Error ? error.message : 'Please try again.'}`);
       setWeather(null);
       setForecast([]);
     }
@@ -150,10 +157,12 @@ function App() {
 
   // Load default weather on component mount
   useEffect(() => {
-    if (!API_KEY || API_KEY === 'your_api_key_here') {
-      setError('Please configure your OpenWeatherMap API key in the .env file. Visit https://openweathermap.org/api to get a free API key.');
+    if (!API_KEY || API_KEY === 'your_api_key_here' || API_KEY === '6f1b8c8e9a1b7b8c8e9a1b7b8c8e9a1b') {
+      setError('🔑 Please configure your OpenWeatherMap API key in the .env file. Visit https://openweathermap.org/api to get a free API key.');
       return;
     }
+    
+    // Test the API key with London
     searchWeather('London');
   }, []);
 
