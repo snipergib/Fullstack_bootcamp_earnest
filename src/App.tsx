@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { Search, MapPin, Wind, Droplets, Eye, Thermometer } from 'lucide-react';
 import './App.css';
 
+// OpenWeatherMap API Configuration
+const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || '6f1b8c8e9a1b7b8c8e9a1b7b8c8e9a1b';
+const BASE_URL = 'https://api.openweathermap.org/data/2.5';
+
 interface WeatherData {
   location: string;
   temperature: number;
@@ -11,6 +15,7 @@ interface WeatherData {
   windSpeed: number;
   visibility: number;
   feelsLike: number;
+  country: string;
 }
 
 interface ForecastDay {
@@ -28,65 +33,88 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Mock weather data for demonstration
-  const mockWeatherData: Record<string, { current: WeatherData; forecast: ForecastDay[] }> = {
-    london: {
-      current: {
-        location: 'London, UK',
-        temperature: 22,
-        condition: 'Partly Cloudy',
-        icon: '⛅',
-        humidity: 65,
-        windSpeed: 12,
-        visibility: 10,
-        feelsLike: 24
-      },
-      forecast: [
-        { day: 'Today', high: 24, low: 18, condition: 'Partly Cloudy', icon: '⛅' },
-        { day: 'Tomorrow', high: 26, low: 20, condition: 'Sunny', icon: '☀️' },
-        { day: 'Wed', high: 23, low: 17, condition: 'Rainy', icon: '🌧️' },
-        { day: 'Thu', high: 25, low: 19, condition: 'Cloudy', icon: '☁️' },
-        { day: 'Fri', high: 27, low: 21, condition: 'Sunny', icon: '☀️' }
-      ]
-    },
-    paris: {
-      current: {
-        location: 'Paris, France',
-        temperature: 19,
-        condition: 'Rainy',
-        icon: '🌧️',
-        humidity: 78,
-        windSpeed: 8,
-        visibility: 7,
-        feelsLike: 17
-      },
-      forecast: [
-        { day: 'Today', high: 21, low: 15, condition: 'Rainy', icon: '🌧️' },
-        { day: 'Tomorrow', high: 18, low: 12, condition: 'Cloudy', icon: '☁️' },
-        { day: 'Wed', high: 22, low: 16, condition: 'Partly Cloudy', icon: '⛅' },
-        { day: 'Thu', high: 24, low: 18, condition: 'Sunny', icon: '☀️' },
-        { day: 'Fri', high: 20, low: 14, condition: 'Rainy', icon: '🌧️' }
-      ]
-    },
-    tokyo: {
-      current: {
-        location: 'Tokyo, Japan',
-        temperature: 28,
-        condition: 'Sunny',
-        icon: '☀️',
-        humidity: 55,
-        windSpeed: 15,
-        visibility: 12,
-        feelsLike: 31
-      },
-      forecast: [
-        { day: 'Today', high: 30, low: 24, condition: 'Sunny', icon: '☀️' },
-        { day: 'Tomorrow', high: 32, low: 26, condition: 'Sunny', icon: '☀️' },
-        { day: 'Wed', high: 29, low: 23, condition: 'Partly Cloudy', icon: '⛅' },
-        { day: 'Thu', high: 27, low: 21, condition: 'Cloudy', icon: '☁️' },
-        { day: 'Fri', high: 25, low: 19, condition: 'Rainy', icon: '🌧️' }
-      ]
+  // Weather icon mapping function
+  const getWeatherIcon = (iconCode: string): string => {
+    const iconMap: Record<string, string> = {
+      '01d': '☀️', '01n': '🌙',
+      '02d': '⛅', '02n': '☁️',
+      '03d': '☁️', '03n': '☁️',
+      '04d': '☁️', '04n': '☁️',
+      '09d': '🌧️', '09n': '🌧️',
+      '10d': '🌦️', '10n': '🌧️',
+      '11d': '⛈️', '11n': '⛈️',
+      '13d': '❄️', '13n': '❄️',
+      '50d': '🌫️', '50n': '🌫️'
+    };
+    return iconMap[iconCode] || '🌤️';
+  };
+
+  // Fetch weather data from OpenWeatherMap API
+  const fetchWeatherData = async (city: string): Promise<{ current: WeatherData; forecast: ForecastDay[] } | null> => {
+    try {
+      // Fetch current weather
+      const currentResponse = await fetch(
+        `${BASE_URL}/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`
+      );
+      
+      if (!currentResponse.ok) {
+        throw new Error('City not found');
+      }
+      
+      const currentData = await currentResponse.json();
+      
+      // Fetch 5-day forecast
+      const forecastResponse = await fetch(
+        `${BASE_URL}/forecast?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`
+      );
+      
+      const forecastData = await forecastResponse.json();
+      
+      // Process current weather data
+      const current: WeatherData = {
+        location: `${currentData.name}, ${currentData.sys.country}`,
+        temperature: Math.round(currentData.main.temp),
+        condition: currentData.weather[0].description.charAt(0).toUpperCase() + currentData.weather[0].description.slice(1),
+        icon: getWeatherIcon(currentData.weather[0].icon),
+        humidity: currentData.main.humidity,
+        windSpeed: Math.round(currentData.wind.speed * 3.6), // Convert m/s to km/h
+        visibility: Math.round(currentData.visibility / 1000), // Convert m to km
+        feelsLike: Math.round(currentData.main.feels_like),
+        country: currentData.sys.country
+      };
+      
+      // Process forecast data (get one forecast per day)
+      const forecastDays: ForecastDay[] = [];
+      const today = new Date().getDate();
+      
+      for (let i = 0; i < forecastData.list.length && forecastDays.length < 5; i++) {
+        const item = forecastData.list[i];
+        const forecastDate = new Date(item.dt * 1000);
+        const forecastDay = forecastDate.getDate();
+        
+        // Skip today's forecasts, we want future days
+        if (forecastDay !== today && !forecastDays.some(day => day.day === getDayName(forecastDate))) {
+          forecastDays.push({
+            day: forecastDays.length === 0 ? 'Tomorrow' : getDayName(forecastDate),
+            high: Math.round(item.main.temp_max),
+            low: Math.round(item.main.temp_min),
+            condition: item.weather[0].description.charAt(0).toUpperCase() + item.weather[0].description.slice(1),
+            icon: getWeatherIcon(item.weather[0].icon)
+          });
+        }
+      }
+      
+      return { current, forecast: forecastDays };
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+      return null;
     }
+  };
+
+  // Helper function to get day name
+  const getDayName = (date: Date): string => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days[date.getDay()];
   };
 
   const searchWeather = async (searchLocation: string) => {
@@ -95,17 +123,19 @@ function App() {
     setLoading(true);
     setError('');
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const locationKey = searchLocation.toLowerCase();
-    const data = mockWeatherData[locationKey];
-    
-    if (data) {
-      setWeather(data.current);
-      setForecast(data.forecast);
-    } else {
-      setError('Location not found. Try "London", "Paris", or "Tokyo"');
+    try {
+      const data = await fetchWeatherData(searchLocation);
+      
+      if (data) {
+        setWeather(data.current);
+        setForecast(data.forecast);
+      } else {
+        setError(`Weather data not found for "${searchLocation}". Please check the city name and try again.`);
+        setWeather(null);
+        setForecast([]);
+      }
+    } catch (error) {
+      setError(`Failed to fetch weather data for "${searchLocation}". Please try again.`);
       setWeather(null);
       setForecast([]);
     }
@@ -120,7 +150,11 @@ function App() {
 
   // Load default weather on component mount
   useEffect(() => {
-    searchWeather('london');
+    if (!API_KEY || API_KEY === 'your_api_key_here') {
+      setError('Please configure your OpenWeatherMap API key in the .env file. Visit https://openweathermap.org/api to get a free API key.');
+      return;
+    }
+    searchWeather('London');
   }, []);
 
   return (
@@ -243,9 +277,9 @@ function App() {
 
         {/* Quick Search Suggestions */}
         <div className="quick-search-container">
-          <p className="quick-search-text">Try searching for:</p>
+          <p className="quick-search-text">Popular cities:</p>
           <div className="quick-search-buttons">
-            {['London', 'Paris', 'Tokyo'].map((city) => (
+            {['London', 'Paris', 'Tokyo', 'New York', 'Sydney', 'Mumbai', 'Dubai', 'Berlin'].map((city) => (
               <button
                 key={city}
                 onClick={() => {
@@ -253,6 +287,7 @@ function App() {
                   searchWeather(city);
                 }}
                 className="quick-search-button"
+                disabled={loading}
               >
                 {city}
               </button>
