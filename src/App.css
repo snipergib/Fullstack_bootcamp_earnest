@@ -37,6 +37,27 @@
   @apply absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl transition-colors disabled:opacity-50;
 }
 
+/* City Suggestions Dropdown Styles */
+.city-suggestions {
+  @apply absolute top-full left-0 right-0 bg-white rounded-xl shadow-2xl border border-gray-200 mt-2 z-50 max-h-60 overflow-y-auto backdrop-blur-sm;
+}
+
+.suggestion-item {
+  @apply w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 first:rounded-t-xl last:rounded-b-xl transition-all duration-200 hover:shadow-sm;
+}
+
+.suggestion-item:hover {
+  @apply bg-gradient-to-r from-blue-50 to-indigo-50;
+}
+
+.suggestion-name {
+  @apply font-medium text-gray-900 mb-1;
+}
+
+.suggestion-location {
+  @apply text-sm text-gray-500;
+}
+
 .error-message {
   @apply max-w-md mx-auto mb-6 p-4 bg-red-100 border border-red-300 rounded-xl text-red-700 text-center;
 }

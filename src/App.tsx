@@ -26,12 +26,85 @@ interface ForecastDay {
   icon: string;
 }
 
+interface CitySuggestion {
+  name: string;
+  country: string;
+  state?: string;
+  lat: number;
+  lon: number;
+}
+
 function App() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastDay[]>([]);
   const [location, setLocation] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<number | null>(null);
+
+  // Fetch city suggestions from OpenWeatherMap Geocoding API
+  const fetchCitySuggestions = async (query: string): Promise<CitySuggestion[]> => {
+    if (query.length < 2) return [];
+    
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=5&appid=${API_KEY}`
+      );
+      
+      if (!response.ok) return [];
+      
+      const data = await response.json();
+      return data.map((item: any) => ({
+        name: item.name,
+        country: item.country,
+        state: item.state,
+        lat: item.lat,
+        lon: item.lon
+      }));
+    } catch (error) {
+      console.error('Error fetching city suggestions:', error);
+      return [];
+    }
+  };
+
+  // Handle input change with debounced search
+  const handleInputChange = (value: string) => {
+    setLocation(value);
+    
+    // Clear existing timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    
+    if (value.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    
+    // Set new timeout for debounced search
+    const timeout = window.setTimeout(async () => {
+      const citySuggestions = await fetchCitySuggestions(value);
+      setSuggestions(citySuggestions);
+      setShowSuggestions(citySuggestions.length > 0);
+    }, 300); // 300ms debounce
+    
+    setSearchTimeout(timeout);
+  };
+
+  // Handle suggestion selection
+  const handleSuggestionClick = (suggestion: CitySuggestion) => {
+    const cityName = suggestion.state 
+      ? `${suggestion.name}, ${suggestion.state}, ${suggestion.country}`
+      : `${suggestion.name}, ${suggestion.country}`;
+    
+    setLocation(cityName);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    searchWeather(suggestion.name);
+  };
 
   // Weather icon mapping function
   const getWeatherIcon = (iconCode: string): string => {
@@ -166,6 +239,15 @@ function App() {
     searchWeather('London');
   }, []);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
+
   return (
     <div className="weather-background">
       <div className="weather-container">
@@ -181,19 +263,52 @@ function App() {
             <input
               type="text"
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch(e)}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch(e);
+                  setShowSuggestions(false);
+                } else if (e.key === 'Escape') {
+                  setShowSuggestions(false);
+                }
+              }}
+              onBlur={() => {
+                // Delay hiding suggestions to allow click events
+                setTimeout(() => setShowSuggestions(false), 150);
+              }}
               placeholder="Search for a city..."
               className="search-input"
+              autoComplete="off"
             />
             <Search className="search-icon" />
             <button
-              onClick={handleSearch}
+              onClick={() => {
+                handleSearch();
+                setShowSuggestions(false);
+              }}
               disabled={loading}
               className="search-button"
             >
               {loading ? '...' : 'Search'}
             </button>
+            
+            {/* City Suggestions Dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="city-suggestions">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={`${suggestion.name}-${suggestion.country}-${index}`}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="suggestion-item"
+                  >
+                    <div className="suggestion-name">{suggestion.name}</div>
+                    <div className="suggestion-location">
+                      {suggestion.state ? `${suggestion.state}, ` : ''}{suggestion.country}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
