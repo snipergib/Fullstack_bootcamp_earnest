@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Search, MapPin, Wind, Droplets, Eye, Thermometer } from 'lucide-react';
+import { Search, MapPin, Wind, Droplets, Eye, Thermometer, Clock, TrendingUp } from 'lucide-react';
 import './App.css';
 
 // OpenWeatherMap API Configuration
 const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || '6f1b8c8e9a1b7b8c8e9a1b7b8c8e9a1b';
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
+const BACKEND_URL = 'http://localhost:8001/api';
 
 interface WeatherData {
   location: string;
@@ -34,6 +35,23 @@ interface CitySuggestion {
   lon: number;
 }
 
+interface SearchHistoryItem {
+  id: number;
+  city: string;
+  timestamp: string;
+  weather: {
+    temperature: number;
+    description: string;
+    humidity: number;
+    windSpeed: number;
+  };
+}
+
+interface PopularCity {
+  city: string;
+  searchCount: number;
+}
+
 function App() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastDay[]>([]);
@@ -43,6 +61,9 @@ function App() {
   const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<number | null>(null);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [popularCities, setPopularCities] = useState<PopularCity[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Fetch city suggestions from OpenWeatherMap Geocoding API
   const fetchCitySuggestions = async (query: string): Promise<CitySuggestion[]> => {
@@ -197,6 +218,51 @@ function App() {
     return days[date.getDay()];
   };
 
+  // Backend API functions
+  const searchWeatherWithHistory = async (city: string) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/weather/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ city }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.weather;
+      }
+    } catch (error) {
+      console.error('Backend search failed, falling back to direct API:', error);
+    }
+    return null;
+  };
+
+  const fetchSearchHistory = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/weather/history?limit=5`);
+      if (response.ok) {
+        const data = await response.json();
+        setSearchHistory(data.history || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch search history:', error);
+    }
+  };
+
+  const fetchPopularCities = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/weather/popular`);
+      if (response.ok) {
+        const data = await response.json();
+        setPopularCities(data.popularCities || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch popular cities:', error);
+    }
+  };
+
   const searchWeather = async (searchLocation: string) => {
     if (!searchLocation.trim()) return;
     
@@ -204,11 +270,19 @@ function App() {
     setError('');
     
     try {
+      // Try to search through backend first (for history tracking)
+      const backendWeather = await searchWeatherWithHistory(searchLocation);
+      
+      // Fallback to direct API call
       const data = await fetchWeatherData(searchLocation);
       
       if (data) {
         setWeather(data.current);
         setForecast(data.forecast);
+        
+        // Refresh search history and popular cities
+        fetchSearchHistory();
+        fetchPopularCities();
       } else {
         setError(`Weather data not found for "${searchLocation}". Please check the city name and try again.`);
         setWeather(null);
@@ -237,6 +311,10 @@ function App() {
     
     // Test the API key with London
     searchWeather('London');
+    
+    // Load search history and popular cities
+    fetchSearchHistory();
+    fetchPopularCities();
   }, []);
 
   // Cleanup timeout on unmount
@@ -394,6 +472,97 @@ function App() {
                   <div className="forecast-temp-low">{day.low}°</div>
                   <div className="forecast-condition">{day.condition}</div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Search History Section */}
+        <div className="history-card animate-fade-in-up">
+          <div className="history-header">
+            <h2 className="history-title">
+              <Clock className="w-5 h-5 mr-2" />
+              Recent Searches
+            </h2>
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="history-toggle"
+            >
+              {showHistory ? 'Hide' : 'Show'} History
+            </button>
+          </div>
+          
+          {showHistory && (
+            <div className="space-y-2">
+              {searchHistory.length > 0 ? (
+                searchHistory.slice(0, 3).map((item) => (
+                  <div
+                    key={item.id}
+                    className="history-item"
+                    onClick={() => {
+                      setLocation(item.city);
+                      searchWeather(item.city);
+                    }}
+                  >
+                    <div className="history-item-info">
+                      <MapPin className="w-4 h-4 text-blue-300 flex-shrink-0" />
+                      <div className="history-item-details">
+                        <div className="history-city-name">{item.city}</div>
+                        <div className="history-timestamp">
+                          {new Date(item.timestamp).toLocaleDateString()} at {new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="history-weather">
+                      <div className="history-temperature">{Math.round(item.weather.temperature)}°C</div>
+                      <div className="history-description">{item.weather.description}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="history-empty">
+                  No search history yet. Search for a city to see it here!
+                </div>
+              )}
+              {searchHistory.length > 3 && (
+                <div className="text-center mt-2">
+                  <button
+                    onClick={() => {
+                      // You can add a "Show More" functionality here if needed
+                    }}
+                    className="text-blue-300 hover:text-white text-xs transition-colors"
+                  >
+                    +{searchHistory.length - 3} more searches
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Popular Cities */}
+        {popularCities.length > 0 && (
+          <div className="popular-cities-card animate-fade-in-up">
+            <h2 className="popular-cities-title">
+              <TrendingUp className="w-5 h-5 mr-2" />
+              Popular Cities
+            </h2>
+            <div className="popular-cities-grid">
+              {popularCities.slice(0, 8).map((city) => (
+                <button
+                  key={city.city}
+                  onClick={() => {
+                    setLocation(city.city);
+                    searchWeather(city.city);
+                  }}
+                  className="popular-city-item"
+                  disabled={loading}
+                >
+                  <div className="popular-city-info">
+                    <div className="popular-city-name">{city.city}</div>
+                    <div className="popular-city-count">{city.searchCount} searches</div>
+                  </div>
+                </button>
               ))}
             </div>
           </div>
