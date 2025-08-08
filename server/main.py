@@ -7,7 +7,11 @@ import os
 from datetime import datetime
 import json
 
-app = FastAPI(title="Weather Search History API")
+app = FastAPI(
+    title="Weather Search History API",
+    description="API for tracking weather search history and popular cities",
+    version="2.0.0"
+)
 
 # Enable CORS
 app.add_middleware(
