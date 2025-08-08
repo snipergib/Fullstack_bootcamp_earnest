@@ -53,6 +53,16 @@ class PopularCity(BaseModel):
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "6f1b8c8e9a1b7b8c8e9a1b7b8c8e9a1b")
 OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5"
 
+@app.get("/")
+async def root():
+    """Health check endpoint"""
+    return {"message": "Weather API is running!", "status": "healthy"}
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Render"""
+    return {"status": "healthy", "service": "weather-api"}
+
 @app.post("/api/weather/search")
 async def search_weather(request: SearchRequest):
     """Search for weather and save to history"""
