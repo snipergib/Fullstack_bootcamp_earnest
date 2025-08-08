@@ -5,7 +5,7 @@ import './App.css';
 // OpenWeatherMap API Configuration
 const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY || '6f1b8c8e9a1b7b8c8e9a1b7b8c8e9a1b';
 const BASE_URL = 'https://api.openweathermap.org/data/2.5';
-const BACKEND_URL = 'http://localhost:8001/api';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8001/api';
 
 interface WeatherData {
   location: string;
