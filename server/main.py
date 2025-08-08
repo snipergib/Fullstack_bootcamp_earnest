@@ -57,12 +57,12 @@ OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5"
 @app.get("/")
 async def root():
     """Health check endpoint"""
-    return {"message": "Weather API is running!", "status": "healthy"}
+    return {"message": "Weather API is running!", "status": "healthy", "version": "2.0", "timestamp": "2025-08-08"}
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint for Render"""
-    return {"status": "healthy", "service": "weather-api"}
+    return {"status": "healthy", "service": "weather-api", "version": "2.0"}
 
 @app.get("/api")
 async def api_info():
