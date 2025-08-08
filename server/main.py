@@ -15,6 +15,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173", 
         "http://localhost:3000",
+        "https://fullstack-bootcamp-earnest.onrender.com",
         "https://weather-dashboard.onrender.com",
         "https://*.onrender.com"
     ],
@@ -62,6 +63,20 @@ async def root():
 async def health_check():
     """Health check endpoint for Render"""
     return {"status": "healthy", "service": "weather-api"}
+
+@app.get("/api")
+async def api_info():
+    """API information endpoint"""
+    return {
+        "message": "Weather Search History API",
+        "version": "1.0.0",
+        "endpoints": {
+            "POST /api/weather/search": "Search weather and save to history",
+            "GET /api/weather/history": "Get search history",
+            "GET /api/weather/popular": "Get popular cities",
+            "GET /api/weather/stats": "Get API statistics"
+        }
+    }
 
 @app.post("/api/weather/search")
 async def search_weather(request: SearchRequest):
