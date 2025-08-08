@@ -271,7 +271,7 @@ function App() {
     
     try {
       // Try to search through backend first (for history tracking)
-      const backendWeather = await searchWeatherWithHistory(searchLocation);
+      await searchWeatherWithHistory(searchLocation);
       
       // Fallback to direct API call
       const data = await fetchWeatherData(searchLocation);
